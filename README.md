@@ -9,27 +9,6 @@ The fonts are also predefined fonts in Material theme, namely body1-2, h5-h1 and
 
 In order to customize the composable design you just need to modify your app's theme.
 
-
-
-
-## Adding to your project
-First add `jitpack.io` to setting.gradle
-```groovy
-repositories {
-        google()
-        mavenCentral()
-        maven { url "https://jitpack.io" }
-    }
-```
-
-Then add following line to your module build.gradle file
-```groovy
-dependencies{
-  ...
-  implementation 'com.github.Mohamad-Sarfi:compose_persian_date_picker:0.5.0'
- }
-```
-
 ## Usage Instructions - PersianDatePicker
 The composable function "PersianDatePicker" must be called from another @Composable function.
 First you have to declare a boolean state named "hideDatePicker" which its value will be set true in "onDismiss" lambda.
