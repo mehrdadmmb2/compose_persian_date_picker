@@ -38,51 +38,47 @@ import ir.huri.jcal.JalaliCalendar
 import kotlinx.coroutines.launch
 import java.time.Year
 
+
+val blue0 = Color(0xffe5f1ff)
+val blue1 = Color(0xff0776f7)
+val blue_2F52E0 = Color(0xff2F52E0)
+val red1 = Color(0xfffd504f)
+val white = Color(0xFFFFFFFF)
+
 @Composable
-fun PersianDatePicker(
-    onDismiss : (Boolean) -> Unit,
-    minYear: Int = 1350,
-    maxYear: Int = 1420,
-    positiveButtonTxt : String = "تایید",
-    negativeButtonTxt : String = "لغو",
-    shortWeekDays: Boolean = false,
-    setDate : (Map<String, String>) -> Unit
-){
-
+fun PersianRangeDatePicker(
+    onDismiss: (Boolean) -> Unit,
+    onClear: () -> Unit,
+    setDate: (List<Map<String, String>>) -> Unit,
+) {
     val today = JalaliCalendar().day
-    val month = JalaliCalendar().month
-    val year = JalaliCalendar().year
-
-    val monthsList = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند",)
-
+    val month = JalaliCalendar().month - 1
+    val year = JalaliCalendar().year - 1
     var selectedPart by remember {
         mutableStateOf("main")
     }
-
-    var mMonth by remember {
-        mutableStateOf(monthsList[month - 1])
+    var startDate by remember {
+        mutableStateOf(listOf(year, month, today))
+    }
+    var endDate by remember {
+        mutableStateOf(listOf(year, month, today))
     }
 
-    var mYear by remember {
-        mutableStateOf(year.toString())
-    }
-
-    var mDay by remember {
-        mutableStateOf(today.toString())
+    var enableButton by remember {
+        mutableStateOf(false)
     }
 
     val width = LocalConfiguration.current.screenWidthDp
-    val height = LocalConfiguration.current.screenHeightDp * .6
-
-    Dialog(
-        onDismissRequest = { onDismiss(true) }
+    CompositionLocalProvider(
+        LocalLayoutDirection provides LayoutDirection.Rtl, LocalDensity provides Density(
+            LocalDensity.current.density,
+            1f // - we set here default font scale instead of system one
+        )
     ) {
         Card(
             modifier = Modifier
-                .size(width = width.dp, height = 530.dp)
-                .padding(5.dp),
+                .size(width = width.dp, height = 530.dp),
             shape = RoundedCornerShape(10.dp),
-            elevation = 4.dp,
             backgroundColor = MaterialTheme.colors.background
         ) {
             Column(
@@ -92,555 +88,590 @@ fun PersianDatePicker(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
                 MainContent(
-                    mMonth, mYear, mDay,
-                    minYear = minYear ,
-                    maxYear = maxYear ,
-                    shortWeekDays = shortWeekDays,
-                    selectedPart,{mDay = it},
-                    setMonth = {mMonth = it},
-                    setYear = {mYear = it} ){selectedPart = it}
+                    startDate,
+                    endDate,
+                    selectedPart,
+                    setStartDate = { startDate = it },
+                    setEndDate = { endDate = it },
+                    setSelected = { selectedPart = it },
+                    setEnableButton = {
+                        enableButton = it
+                    }
+                )
 
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(15.dp)
-                    ,
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.End
                 ) {
 
                     Text(
-                        text = negativeButtonTxt,
-                        color = MaterialTheme.colors.primary,
-                        style = MaterialTheme.typography.h5,
+                       
+                        text = "حذف انتخاب ها",
+                        color = red1,
+                        fontSize = 16.sp,
                         modifier = Modifier
                             .clickable {
-                                onDismiss(true)
-                            }
-                            .padding(horizontal = 10.dp)
-                    )
-                    Text(
-                        text = positiveButtonTxt,
-                        color = MaterialTheme.colors.primary,
-                        style = MaterialTheme.typography.h5,
-                        modifier = Modifier
-                            .clickable {
-                                onDismiss(true)
+                                onClear()
                                 setDate(
-                                    mapOf(
-                                        "day" to mDay,
-                                        "month" to (monthsList.indexOf(mMonth) + 1).toString(),
-                                        "year" to mYear
+                                    listOf(
+                                        mapOf(
+                                            "day" to today.toString(),
+                                            "month" to month.toString(),
+                                            "year" to year.toString()
+                                        ),
+                                        mapOf(
+                                            "day" to today.toString(),
+                                            "month" to month.toString(),
+                                            "year" to year.toString()
+                                        )
                                     )
                                 )
                             }
-                            .padding(horizontal = 15.dp)
+                            .padding(horizontal = 10.dp)
+                            .weight(1f)
+                            .fillMaxWidth()
                     )
+                    Button(
+                        onClick = {
+                            onDismiss(true)
+                            setDate(
+                                listOf(
+                                    mapOf(
+                                        "day" to startDate[2].toString(),
+                                        "month" to startDate[1].toString(),
+                                        "year" to startDate[0].toString()
+                                    ),
+                                    mapOf(
+                                        "day" to endDate[2].toString(),
+                                        "month" to endDate[1].toString(),
+                                        "year" to endDate[0].toString()
+                                    )
+                                )
+                            )
+                        },
+                        colors = androidx.compose.material.ButtonDefaults.buttonColors(
+                            Color(0xff2F52E0)
+                        ),
+                        enabled = enableButton,
+                        modifier = Modifier
+                            .padding(horizontal = 15.dp)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .weight(2f)
+                            .height(48.dp)
+                    ) {
+                        Text(
+                           
+                            text = "تایید",
+                            color = white,
+                            fontSize = 16.sp,
+                        )
+                    }
+
 
                 }
             }
-
         }
     }
 }
 
 @Composable
 private fun MainContent(
-    mMonth: String,
-    mYear : String,
-    mDay : String,
-    minYear: Int,
-    maxYear: Int,
-    shortWeekDays : Boolean,
-    selectedPart : String,
-    setDay : (String) -> Unit,
-    setMonth: (String) -> Unit,
-    setYear: (String) -> Unit,
-    setSelected : (String) -> Unit
-){
+    startDate: List<Int>,
+    endDate: List<Int>,
+    selectedPart: String,
+    setStartDate: (List<Int>) -> Unit,
+    setEndDate: (List<Int>) -> Unit,
+    setSelected: (String) -> Unit,
+    setEnableButton: (Boolean) -> Unit,
+) {
+
 
     val width = LocalConfiguration.current.screenWidthDp
-    val persianWeekDays = listOf("شنبه","یکشنبه","دوشنبه","سه شنبه","چهارشنبه","پنجشنبه","جمعه", )
+    val persianWeekDays =
+        listOf("شنبه", "یکشنبه", "دوشنبه", "سه شنبه", "چهارشنبه", "پنجشنبه", "جمعه")
+    val monthsList = listOf(
+        "فروردین",
+        "اردیبهشت",
+        "خرداد",
+        "تیر",
+        "مرداد",
+        "شهریور",
+        "مهر",
+        "آبان",
+        "آذر",
+        "دی",
+        "بهمن",
+        "اسفند",
+    )
+    val weekDay = JalaliCalendar(startDate[0], startDate[1], startDate[2]).dayOfWeek
 
-    val monthsList = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند",)
-    val weekDay = JalaliCalendar(mYear.toInt(), monthsList.indexOf(mMonth) + 1, mDay.toInt()).dayOfWeek
-
-    var inputFormat by remember {
-        // manual, selection
-        mutableStateOf("selection")
+    var end by remember {
+        mutableStateOf(false)
     }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Column() {
-
+        Column {
             Row(
-                Modifier
-                    .height(30.dp)
+                modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colors.primary)
+                    .background(blue_2F52E0)
                     .padding(vertical = 10.dp, horizontal = 25.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End
             ) {
-                //Text(text = "انتخاب تاریخ", color = MaterialTheme.colors.onPrimary, style = MaterialTheme.typography.body2)
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colors.primary)
-                    .padding(vertical = 10.dp, horizontal = 25.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = null,
-                    tint = MaterialTheme.colors.onPrimary,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable {
-                            inputFormat = if (inputFormat == "selection") {
-                                "manual"
-                            } else {
-                                "selection"
-                            }
-                        }
-                )
                 Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End
-                ){
-                    Text(
-                        text = mMonth,
-                        style = MaterialTheme.typography.h5,
-                        color = MaterialTheme.colors.onPrimary,
-                        modifier = Modifier
-                            .padding(horizontal = 5.dp)
-                            .clickable {
-                                setSelected("month")
-                            }
-                    )
-                    Text(text = mDay, style = MaterialTheme.typography.h5, color = MaterialTheme.colors.onPrimary)
-                    Text(text = persianWeekDays[weekDay - 1] , style = MaterialTheme.typography.h5, color = MaterialTheme.colors.onPrimary, modifier = Modifier.padding(horizontal = 5.dp))
-
-                }
-            }
-
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 13.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row() {
-                    Text(
-                        text = mYear,
-                        style = MaterialTheme.typography.body1,
-                        color = MaterialTheme.colors.onBackground.copy(.7f),
-                        modifier = Modifier.clickable {
-                            setSelected("year")
-                        }
-                    )
-                    Text(
-                        text = mMonth,
-                        style = MaterialTheme.typography.body1,
-                        color = MaterialTheme.colors.onBackground.copy(.7f),
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp)
-                            .clickable {
-                                setSelected("month")
-                            }
-                    )
-                }
-                
-                Row() {
-                    if (selectedPart == "main") {
-                        Icon(
-                            Icons.Default.ChevronLeft,
-                            contentDescription = null,
-                            tint = MaterialTheme.colors.onBackground.copy(.8f),
-                            modifier = Modifier
-                                .padding(horizontal = 5.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    decreaseMonth(
-                                        mMonth,
-                                        mYear,
-                                        setMonth = { setMonth(it) },
-                                        setYear = { setYear(it) })
-                                }
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    if (!end) {
+                        Text(
+                            "انتخاب تاریخ",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onPrimary,
+                            modifier = Modifier.padding(horizontal = 5.dp)
                         )
 
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colors.onBackground.copy(.8f),
+                    } else if (startDate == endDate) {
+                        Text(
+                            
+                            text = startDate[2].toString(),
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onPrimary
+                        )
+                        Text(
+                            text = monthsList[startDate[1]],
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onPrimary,
                             modifier = Modifier
                                 .padding(horizontal = 5.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    increaseMonth(
-                                        mMonth,
-                                        mYear,
-                                        setMonth = { setMonth(it) },
-                                        setYear = { setYear(it) })
-                                }
+                        )
+                    } else {
+                        Text(
+                            text = startDate[2].toString(),
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onPrimary
+                        )
+                        Text(
+                            text = monthsList[startDate[1]],
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onPrimary,
+                            modifier = Modifier
+                                .padding(horizontal = 5.dp)
+                        )
+                        Text(
+                           text = "تا",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onPrimary,
+                            modifier = Modifier.padding(horizontal = 5.dp)
+                        )
+                        Text(
+                            
+                            text = endDate[2].toString(),
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onPrimary
+                        )
+                        Text(
+                            
+                            text = monthsList[endDate[1]],
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onPrimary,
+                            modifier = Modifier
+                                .padding(horizontal = 5.dp)
                         )
                     }
-                }
-                
-            }
 
-            Crossfade(targetState = inputFormat) { format ->
-                when(format){
-                    "selection" ->
-                        Crossfade(selectedPart) { part ->
-                            when(part){
-                                "main" -> Days(mMonth, mDay, mYear, shortWeekDays,setDay = {setDay(it)}, changeSelectedPart = {})
-                                "month" -> Months(mMonth,{setSelected("main")} ){setMonth(it)}
-                                "year" -> Years(mYear, minYear, maxYear,setYear = {setYear(it)}, changeSelectedPart = {setSelected("main")})
-                                else -> Days(mMonth, mDay, mYear,shortWeekDays, setDay = {setDay(it)}, changeSelectedPart = {})
-                            }
-                        }
-                    "manual" -> ManualDatePick( { setDay(it) }, {setMonth(it)}, {setYear(it)})
+
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun ManualDatePick(
-    setDay: (String) -> Unit,
-    setMonth: (String) -> Unit,
-    setYear: (String) -> Unit
-){
-
-    val monthsList = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند",)
-
-    var cDay by remember {
-        mutableStateOf("")
-    }
-
-    var cMonth by remember {
-        mutableStateOf("")
-    }
-
-    var cYear by remember {
-        mutableStateOf("")
-    }
-
-    val focusManager = LocalFocusManager.current
-
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = 35.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        OutlinedTextField(
-            value = cYear,
-            onValueChange = {
-                cYear = it
-                setManualYear(it){v->
-                    setYear(it)
+            Days(
+                startDate,
+                endDate,
+                setStartDate = { setStartDate(it) },
+                setEndDay = {
+                    end = true
+                    setEndDate(it)
+                    setEnableButton(true)
                 }
-            },
-            textStyle = MaterialTheme.typography.h5,
-            label = { Text(text = "سال")},
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus()}
-            ),
-            singleLine = true,
-            maxLines = 1,
-            modifier = Modifier.width(70.dp),
-            shape = RoundedCornerShape(10.dp)
-        )
-        OutlinedTextField(
-            value = cMonth,
-            onValueChange = {
+            )
 
-                setManualMonth(it, {cMonth = it}){ v ->
-                    setMonth(monthsList[v.toInt() - 1])
-                }
-                            },
-            textStyle = MaterialTheme.typography.h5,
-            label = { Text(text = "ماه")},
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Previous),
-            keyboardActions = KeyboardActions(
-                onPrevious = { focusManager.moveFocus(FocusDirection.Left)}
-            ),
-            singleLine = true,
-            maxLines = 1,
-            modifier = Modifier.width(70.dp),
-            shape = RoundedCornerShape(10.dp)
-        )
-        OutlinedTextField(
-            value = cDay,
-            onValueChange = {
-                cDay = it
-                setManualDay(it){ v ->
-                    setDay(v)
-                } },
-            textStyle = MaterialTheme.typography.h5,
-            label = { Text(text = "روز")},
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Previous),
-            keyboardActions = KeyboardActions(
-                onPrevious = { focusManager.moveFocus(FocusDirection.Left)},
-            ),
-            singleLine = true,
-            maxLines = 1,
-            modifier = Modifier.width(60.dp),
-            shape = RoundedCornerShape(10.dp)
-        )
-
-    }
-}
-
-private fun setManualDay(value: String, setDay: (String) -> Unit){
-    if (value.isNotEmpty() && value.isDigitsOnly()){
-        when{
-            value.toInt() < 1 -> setDay("1")
-            value.toInt() > 31 -> setDay("31")
-            else -> setDay(value)
         }
     }
 }
 
-private fun setManualMonth(value: String, setCMonth: (String) -> Unit,setMonth: (String) -> Unit){
-    if (value != "" && value.isDigitsOnly()){
-        if (value.toInt() in 1..12){
-            setCMonth(value)
-        }
-    } else {
-        setMonth(value)
-    }
-
-    if (value.isNotEmpty() && value.isDigitsOnly()){
-        when{
-            value.toInt() < 1 -> setMonth("1")
-            value.toInt() > 12 -> setMonth("12")
-            else -> setMonth(value)
-        }
-    }
-}
-
-private fun setManualYear(value: String, setYear: (String) -> Unit){
-    if (value.isNotEmpty() && value.isDigitsOnly()){
-        if (value.length == 4){
-            setYear(value)
-        }
-    }
-}
-
-private fun increaseMonth(mMonth: String, mYear: String,setMonth: (String) -> Unit, setYear: (String) -> Unit) {
-    val monthsList = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند",)
-    if (monthsList.indexOf(mMonth) < 10){
-        setMonth(monthsList[monthsList.indexOf(mMonth) + 1])
-    } else {
-        setMonth(monthsList[0])
-        setYear((mYear.toInt() + 1).toString())
-    }
-}
-
-private fun decreaseMonth(mMonth: String, mYear: String,setMonth: (String) -> Unit, setYear: (String) -> Unit) {
-    val monthsList = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند",)
-    if (monthsList.indexOf(mMonth) > 0){
-        setMonth(monthsList[monthsList.indexOf(mMonth) - 1])
-    } else {
-        setMonth(monthsList[11])
-        setYear((mYear.toInt() - 1).toString())
-    }
-}
-
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun Months(mMonth : String, setSelected: () -> Unit ,setMonth : (String) -> Unit){
+private fun Days(
+    startDate: List<Int>,
+    endDate: List<Int>,
+    setStartDate: (List<Int>) -> Unit,
+    setEndDay: (List<Int>) -> Unit,
+) {
 
-    val monthsList = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند",)
+    val monthsList = listOf(
+        "فروردین",
+        "اردیبهشت",
+        "خرداد",
+        "تیر",
+        "مرداد",
+        "شهریور",
+        "مهر",
+        "آبان",
+        "آذر",
+        "دی",
+        "بهمن",
+        "اسفند",
+    )
+    val weekDays = listOf("شنبه", "یکشنبه", "دوشنبه", "سه شنبه", "چهارشنبه", "پنجشنبه", "جمعه")
 
-    LazyVerticalGrid(
-        modifier = Modifier.fillMaxWidth(),
-        columns = GridCells.Fixed(3),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalArrangement = Arrangement.Center
-    ){
-        items(monthsList){
-            Surface(
-                modifier = Modifier
-                    .padding(5.dp)
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .clickable {
-                        setMonth(it)
-                        setSelected()
-                    }
-                ,
-                shape = CircleShape,
-                color = if (mMonth == it) MaterialTheme.colors.primary else Color.Transparent,
-
-                ) {
-                Column(
-                    Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(text = it, color = if (mMonth == it) MaterialTheme.colors.onPrimary else MaterialTheme.colors.primary, style = MaterialTheme.typography.body1)
-                }
-            }
-        }
+    var start by remember {
+        mutableStateOf(false)
     }
-}
 
-
-@Composable
-private fun Days(mMonth: String,mDay : String , mYear: String ,shortWeekDays: Boolean, setDay : (String) -> Unit, changeSelectedPart : (String) -> Unit){
-
-    val monthsList = listOf("فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند",)
-    val weekDays = listOf("شنبه","یکشنبه","دوشنبه","سه شنبه","چهارشنبه","پنجشنبه","جمعه", )
-    val persianWeekDaysShort = listOf("ش","ی","د","س","چ","پ","ج",)
-
-    var weekDay = JalaliCalendar(mYear.toInt(), monthsList.indexOf(mMonth) + 1 , 1).dayOfWeek
+    var end by remember {
+        mutableStateOf(false)
+    }
 
     var today = JalaliCalendar().day
-    val thisMonth = JalaliCalendar().month -1
-    Log.i("TAG_month","$thisMonth")
-
-    var daysList = mutableListOf<String>()
-
-    Log.i("TAG_weekday", "$weekDay")
-
-    if (weekDay != 7){
-        for (i in 1..weekDay){
-            daysList.add(" ")
-        }
-    }
-
-    if (monthsList.indexOf(mMonth) < 6){
-        for (i in 1..31){
-            daysList.add(i.toString())
-        }
-    } else {
-        for (i in 1..30){
-            daysList.add(i.toString())
-            if (mDay.toInt() > 30){
-                setDay("30")
-            }
-        }
-    }
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 10.dp)) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 0.dp, horizontal = 25.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            if (shortWeekDays){
-                persianWeekDaysShort.forEach{
-                    Text(text = it, color = MaterialTheme.colors.primary.copy(.4f), style = MaterialTheme.typography.subtitle2)
-                }
-            } else {
-                weekDays.forEach{
-                    Text(text = it, color = MaterialTheme.colors.primary.copy(.4f), style = MaterialTheme.typography.subtitle2)
-                }
-            }
-        }
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(7),
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal =  15.dp, vertical = 0.dp),
-            verticalArrangement = Arrangement.Top,
-            horizontalArrangement = Arrangement.Center
-        ){
-            items(daysList){
-                Surface(
-                    modifier = Modifier
-                        .padding(vertical = 1.dp)
-                        .size(45.dp)
-                        .clip(CircleShape)
-                        .clickable {
-                            if (it != " ") {
-                                changeSelectedPart("main")
-                                setDay(it)
-                            }
-                        },
-                    shape = CircleShape,
-                    color = if (mDay == it) MaterialTheme.colors.primary else Color.Transparent,
-                    border = BorderStroke( 1.dp, color = if (it == today.toString() && monthsList.indexOf(mMonth) == thisMonth) MaterialTheme.colors.primary else Color.Transparent)
-                ) {
-                    Row(Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center) {
-                        Text(text = it, style = MaterialTheme.typography.body1, color = if (mDay == it) MaterialTheme.colors.onPrimary else MaterialTheme.colors.onBackground.copy(.7f))
-                    }
-                }
-            }
-        }
-
-    }
-}
+    val thisMonth = JalaliCalendar().month
+    val thisYear = JalaliCalendar().year
 
 
-@Composable
-private fun Years(mYear: String, minYear: Int, maxYear: Int, setYear : (String) -> Unit, changeSelectedPart: (String) -> Unit){
+    val monthRange = getMonthRange(thisMonth, thisYear)
 
-    var years = mutableListOf<Int>()
-    for (y in maxYear downTo minYear){
-        years.add(y)
+    if (startDate == endDate) {
+
     }
 
     var gridState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(key1 = 1){
+    LaunchedEffect(key1 = 1) {
         scope.launch {
-            gridState.scrollToItem(28)
+            gridState.scrollToItem(monthRange.indexOf(MonthYear(thisMonth - 1, thisYear)))
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(18.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        state = gridState
-    ){
-        items(years){
-            Surface(
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp)
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp, horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            weekDays.forEach {
+                Text(
+                   
+                    text = it,
+                    color = blue_2F52E0,
+                    style = MaterialTheme.typography.subtitle2
+                )
+            }
+        }
+
+        //val years = listOf(sYear.toInt() - 1, sYear.toInt(), sYear.toInt() + 1)
+        CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
+            LazyColumn(
                 modifier = Modifier
-                    .padding(15.dp)
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .clickable {
-                        changeSelectedPart("main")
-                        setYear(it.toString())
-                    },
-                shape = CircleShape,
-                color = if (mYear == it.toString()) MaterialTheme.colors.primary else Color.Transparent
+                    .fillMaxWidth()
+                    .height(380.dp),
+                state = gridState
             ) {
-                Row(Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center) {
-                    Text(text = it.toString(), style = MaterialTheme.typography.h5, color = if (mYear == it.toString()) Color.White else MaterialTheme.colors.primary)
+                items(monthRange) { month ->
+
+                    val daysList = daysOfMonth(listOf(month.year, month.month), startDate, endDate)
+
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 19.dp, vertical = 0.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            
+                            text = monthsList[month.month],
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onBackground.copy(.5f)
+                        )
+                    }
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(7),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(280.dp),
+                        contentPadding = PaddingValues(horizontal = 15.dp, vertical = 0.dp),
+                        verticalArrangement = Arrangement.Top,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        items(daysList) {
+                            Surface(
+                                modifier = Modifier
+                                    .padding(vertical = 2.dp)
+                                    .size(42.dp)
+                                    .clip(
+                                        decideDayShape(
+                                            it,
+                                            month,
+                                            startDate,
+                                            endDate,
+                                        )
+                                    )
+                                    .clickable {
+
+                                        setStartEndDates(
+                                            it,
+                                            month,
+                                            startDate,
+                                            endDate,
+                                            start,
+                                            setStartDate = { v ->
+                                                setStartDate(v)
+                                            },
+                                            setEndDate = { v ->
+//                                                if (end) {
+//                                                    end = false
+//                                                    setStartDate(v)
+//
+//                                                } else {
+                                                setEndDay(v)
+//                                                }
+                                            },
+                                            setEndBool = { v -> end = v },
+                                            setStartBool = { v ->
+                                                start = v
+                                            }
+                                        )
+                                    },
+                                shape = decideDayShape(it, month, startDate, endDate),
+                                color =decideDayColor(it, startDate, endDate, end, month,start),
+                                border = BorderStroke(
+                                    1.dp,
+                                    color = if (it == today.toString() && startDate[1] == thisMonth) red1 else Color.Transparent
+                                )
+                            ) {
+                                Row(
+                                    Modifier.fillMaxSize(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = it,
+                                        fontSize = 16.sp,
+                                        color = decideDayText(it, startDate, endDate, month,end)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
+}
 
+private fun setStartEndDates(
+    day: String,
+    monthYear: MonthYear,
+    startDate: List<Int>,
+    endDate: List<Int>,
+    start: Boolean,
+    setStartDate: (List<Int>) -> Unit,
+    setEndDate: (List<Int>) -> Unit,
+    setEndBool: (Boolean) -> Unit,
+    setStartBool: (Boolean) -> Unit
+) {
+    if (day != " ") {
+        val newDate = listOf(monthYear.year, monthYear.month, day.toInt())
+
+        if (!start) {
+            // کلیک اول: فقط تاریخ شروع تنظیم می‌شه
+            setStartDate(newDate)
+            setStartBool(true)
+            setEndBool(false) // مطمئن می‌شیم که پایان هنوز انتخاب نشده
+        } else if (newDate == startDate) {
+            // کلیک روی تاریخ شروع: ریست کردن
+            setStartBool(false)
+            setEndBool(false)
+            setStartDate(newDate)
+        } else {
+            // کلیک دوم یا بعدی: تنظیم تاریخ پایان یا جابه‌جایی
+            val newJalali = JalaliCalendar(newDate[0], newDate[1] + 1, newDate[2])
+            val startJalali = JalaliCalendar(startDate[0], startDate[1] + 1, startDate[2])
+
+            if (newJalali.toInt() < startJalali.toInt()) {
+                // تاریخ جدید قبل از شروع: جابه‌جایی
+                setEndDate(startDate)
+                setStartDate(newDate)
+                setEndBool(true)
+            } else {
+                // تاریخ جدید بعد یا برابر با شروع: تنظیم به‌عنوان پایان
+                setEndDate(newDate)
+                setEndBool(true)
+            }
+        }
+    }
+}
+
+fun JalaliCalendar.toInt(): Int {
+
+    return (year * 365) + (month * 30) + day
+}
+
+private fun calculateFirstDayOffset(date: List<Int>): Int {
+    return JalaliCalendar(date[0].toInt(), date[1] + 1, 1).dayOfWeek
+}
+
+private fun daysOfMonth(date: List<Int>, startDate: List<Int>, endDate: List<Int>): List<String> {
+    var daysList = mutableListOf<String>()
+
+    val weekDay = calculateFirstDayOffset(date)
+    if (weekDay != 7) {
+        for (i in 1..weekDay) {
+            daysList.add(" ")
+        }
+    }
+    var dayCount: Int = 0
+
+    dayCount = if (date[1] < 6) {
+        31
+    } else {
+        30
+    }
+
+    for (i in 1..dayCount) {
+        daysList.add(i.toString())
+    }
+
+    return daysList
 }
 
 
+private fun decideDayColor(
+    day: String,
+    startDate: List<Int>,
+    endDate: List<Int>,
+    end: Boolean,
+    monthYear: MonthYear,
+    start: Boolean
+): Color {
+    if (day != " ") {
+        if (day == startDate[2].toString() && monthYear.month == startDate[1] && monthYear.year == startDate[0]) {
+            // روز شروع
+            return blue1
+        } else if (end && day == endDate[2].toString() && monthYear.month == endDate[1] && monthYear.year == endDate[0]) {
+            // روز پایان (فقط وقتی end درست باشه)
+            return blue1
+        } else if (end && isBetweenStartEnd(day, startDate, endDate, monthYear)) {
+            // روزهای بین شروع و پایان (فقط وقتی end درست باشه)
+            return blue0
+        }
+        // روزهای عادی
+        return Color.Transparent
+    }
+    // فضای خالی
+    return Color.Transparent
+}
 
+@Composable
+private fun decideDayText(
+    day: String,
+    startDate: List<Int>,
+    endDate: List<Int>,
+    monthYear: MonthYear,
+    end: Boolean = false
+): Color {
+    if (day != " ") {
+        val isStart = day == startDate[2].toString() && monthYear.month == startDate[1] && monthYear.year == startDate[0]
+        val isEnd = day == endDate[2].toString() && monthYear.month == endDate[1] && monthYear.year == endDate[0]
+
+        if (isStart || (isEnd && end)) {
+            // رنگ سفید برای روز شروع یا روز پایان وقتی بازه کامل انتخاب شده
+            return MaterialTheme.colors.onPrimary
+        } else {
+            // رنگ معمولی برای بقیه روزها
+            return MaterialTheme.colors.onBackground.copy(.7f)
+        }
+    }
+    return Color.Transparent
+}
+
+private fun decideDayShape(
+    day: String,
+    monthYear: MonthYear,
+    startDate: List<Int>,
+    endDate: List<Int>
+): RoundedCornerShape {
+
+    val cornerRadius = 13.dp
+    if (day != " ") {
+        if (day.toInt() == startDate[2] && monthYear.month == startDate[1] && monthYear.year == startDate[0]) {
+            return RoundedCornerShape(topStart = cornerRadius, bottomStart = cornerRadius)
+        } else if (day.toInt() == endDate[2] && monthYear.month == endDate[1] && monthYear.year == endDate[0]) {
+            return RoundedCornerShape(topEnd = cornerRadius, bottomEnd = cornerRadius)
+        } else if (isBetweenStartEnd(day, startDate, endDate, monthYear)) {
+            return RoundedCornerShape(0.dp)
+        }
+        return RoundedCornerShape(0.dp)
+    }
+    return RoundedCornerShape(0.dp)
+}
+
+private fun isBetweenStartEnd(
+    value: String,
+    startDate: List<Int>,
+    endDate: List<Int>,
+    monthYear: MonthYear
+): Boolean {
+    if (value != " ") {
+        if (monthYear.month == startDate[1] && monthYear.year == startDate[0] && monthYear.month == endDate[1] && monthYear.year == endDate[0]) {
+            if (value.toInt() > startDate[2] && value.toInt() < endDate[2]) {
+                return true
+            }
+        } else if (monthYear.month == startDate[1]) {
+            if (value.toInt() > startDate[2]) {
+                return true
+            }
+        } else if (monthYear.month < endDate[1] && monthYear.month > startDate[1]) {
+            return true
+        } else if (monthYear.month <= endDate[1] && monthYear.month > startDate[1]) {
+            if (value.toInt() < endDate[2]) {
+                return true
+            }
+        }
+        return false
+    }
+    return false
+}
+
+data class MonthYear(val month: Int, val year: Int)
+
+fun getMonthRange(thisMonth: Int, thisYear: Int): List<MonthYear> {
+    return (-3..1).map { offset ->
+        var tempMonth = thisMonth + offset
+        var tempYear = thisYear
+
+        if (tempMonth < 0) {
+            tempMonth += 12
+            tempYear -= 1
+        } else if (tempMonth > 11) {
+            tempMonth -= 12
+            tempYear += 1
+        }
+        MonthYear(tempMonth, tempYear)
+    }
+}
